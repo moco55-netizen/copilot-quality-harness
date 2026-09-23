@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["schemaVersion", "runId", "status", "tests", "unexecuted", "residualRisks"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "runId": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["passed", "failed", "not-run"] },
+    "tests": { "type": "object" },
+    "unexecuted": { "type": "array", "items": { "type": "string" } },
+    "residualRisks": { "type": "array", "items": { "type": "string" } }
+  }
+}
