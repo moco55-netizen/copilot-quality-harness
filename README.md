@@ -1,6 +1,6 @@
 # Copilot Quality Harness
 
-最小の React + Node.js + SQLite アプリを題材に、Issue 起点の AI 開発を決定論的なテストと人間レビューで支えるためのハーネスです。M0〜M1では、入力契約・Skills・テスト・CIの土台を提供します。
+最小の React + Node.js + SQLite アプリを題材に、Issue 起点の AI 開発を決定論的なテストと人間レビューで支えるためのハーネスです。M0〜M2では、入力契約・Skills・決定論的なIssue→解析→テスト設計検証・テスト・CIの土台を提供します。
 
 ## Quick start
 
@@ -16,6 +16,8 @@ npm test                 # frontend unit + backend API
 npm run build            # frontend production build
 npm run test:e2e         # Playwright (必要なら npx playwright install)
 npm run quality:report  # qa/test-management/reports/test-result.json を生成
+npm run test:m2          # M2 CLIの決定論的テスト
+npm run m2:validate      # fixtures/m2/valid-issue.jsonからM2成果物を生成
 ```
 
 ## Quality contract
@@ -32,3 +34,9 @@ npm run quality:report  # qa/test-management/reports/test-result.json を生成
 - `.github/skills/`: 共通契約と優先Skills
 - `.github/workflows/`: 決定論的CI
 - `qa/test-management/`: 観点カタログ、スキーマ、実行レポート
+
+## M2 validation contract
+
+`scripts/m2-validation.mjs` はネットワークアクセスやソースツリーへの書き込みを行わず、`--issue`（Issue契約JSON）、`--catalog`（観点カタログYAML）、`--root`（解析対象ルート）、`--output`（成果物出力先）を受け取ります。出力契約は `qa/test-management/schemas/m2-validation.schema.json` で定義し、`status`、`issue`、`analysis`（候補パス、分類、参照検証）、`testDesign`（カタログ全項目と受入条件）を含む決定論的JSONです。
+
+終了コードは `0=成功`、`2=契約/参照不正`、`3=安全停止（high/critical、不足情報、実行不許可）`、`4=入出力エラー` です。`targetPaths` はリポジトリ相対パスのみ許可され、存在しない参照や親ディレクトリ参照は停止します。

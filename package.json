@@ -12,6 +12,8 @@
     "test": "npm run test --workspace backend && npm run test --workspace frontend",
     "test:api": "npm run test:api --workspace backend",
     "test:e2e": "playwright test",
+    "test:m2": "node --test scripts/m2-validation.test.mjs",
+    "m2:validate": "node scripts/m2-validation.mjs --issue fixtures/m2/valid-issue.json --catalog qa/test-management/test-observation-catalog.yml --root . --output qa/test-management/reports/m2-validation.json",
     "lint": "npm run lint --workspace frontend && npm run lint --workspace backend",
     "quality:report": "node scripts/quality-report.mjs"
   },

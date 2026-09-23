@@ -16,6 +16,8 @@ jobs:
       # switch to npm ci once dependency versions are frozen.
       - run: npm install
       - run: npm test
+      - run: npm run test:m2
+      - run: npm run m2:validate
       - run: npm run build
       - run: npm run quality:report
       - uses: actions/upload-artifact@v4

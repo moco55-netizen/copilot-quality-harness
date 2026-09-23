@@ -21,5 +21,6 @@
     "severity": { "enum": ["low", "medium", "high", "critical"] },
     "aiExecutionAllowed": { "type": "boolean" },
     "missingInformation": { "type": "array", "items": { "type": "string" } }
+    ,"targetPaths": { "type": "array", "items": { "type": "string", "minLength": 1 } }
   }
 }
