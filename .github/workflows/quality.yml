@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 20, cache: npm }
+        with: { node-version: 20 }
       # This starter repository intentionally does not commit a lockfile yet;
       # switch to npm ci once dependency versions are frozen.
       - run: npm install
