@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["exitCode", "status"],
+  "properties": {
+    "exitCode": { "type": "integer", "enum": [0, 2, 3, 4] },
+    "status": { "enum": ["ok", "invalid", "unsafe-stop", "io-error"] },
+    "errors": { "type": "array", "items": { "type": "string" } },
+    "issue": { "$ref": "issue-contract.schema.json" },
+    "analysis": {
+      "type": "object",
+      "required": ["schemaVersion", "candidates", "references", "valid", "scope"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "candidates": { "type": "array" },
+        "references": { "type": "array", "items": { "type": "string" } },
+        "valid": { "type": "boolean" },
+        "scope": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "testDesign": {
+      "type": "object",
+      "required": ["schemaVersion", "issueNumber", "observations", "acceptanceCriteria", "referencedPaths"]
+    }
+  }
+}

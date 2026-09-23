@@ -1,0 +1,17 @@
+name: Bug
+description: 再現可能な不具合
+title: "[Bug] "
+labels: ["bug", "needs-triage"]
+body:
+  - type: textarea
+    id: reproduction
+    attributes: { label: 再現手順, description: 手順・実際の結果・期待結果 }
+    validations: { required: true }
+  - type: textarea
+    id: impact
+    attributes: { label: 影響範囲とseverity }
+    validations: { required: true }
+  - type: textarea
+    id: test
+    attributes: { label: テスト要求 }
+    validations: { required: true }

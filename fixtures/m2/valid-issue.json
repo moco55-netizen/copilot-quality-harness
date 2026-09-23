@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "issueNumber": 12,
+  "acceptanceCriteria": ["The validation flow produces a complete test design."],
+  "scope": ["Docs", "Infra"],
+  "severity": "low",
+  "aiExecutionAllowed": true,
+  "missingInformation": [],
+  "targetPaths": ["README.md", ".github/skills/03-test-observation-design.md"]
+}

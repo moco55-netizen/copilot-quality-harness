@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "issueNumber": 0,
+  "acceptanceCriteria": [],
+  "scope": ["Unknown"],
+  "severity": "low",
+  "aiExecutionAllowed": true,
+  "missingInformation": []
+}
