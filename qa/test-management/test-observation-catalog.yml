@@ -1,0 +1,12 @@
+schemaVersion: 1
+requiredObservations:
+  - happy-path
+  - boundary
+  - invalid-input
+  - error-handling
+  - authorization
+  - data-integrity
+  - api-contract
+  - ui-display
+  - regression
+  - primary-user-flow

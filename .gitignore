@@ -1,0 +1,7 @@
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+backend/data/
+qa/test-management/reports/test-result.json

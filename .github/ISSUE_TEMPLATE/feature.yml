@@ -1,0 +1,27 @@
+name: Feature
+description: 受入条件が確定した機能要求
+title: "[Feature] "
+labels: ["feature", "needs-triage"]
+body:
+  - type: textarea
+    id: background
+    attributes: { label: 背景, description: なぜ必要か }
+    validations: { required: true }
+  - type: textarea
+    id: acceptance
+    attributes: { label: 受入条件, description: Given/When/Thenで記載 }
+    validations: { required: true }
+  - type: textarea
+    id: scope
+    attributes: { label: 影響範囲, description: Frontend/Backend/API/DB/Infra/Docs }
+    validations: { required: true }
+  - type: dropdown
+    id: risk
+    attributes:
+      label: リスク
+      options: ["low", "medium", "high", "critical"]
+    validations: { required: true }
+  - type: textarea
+    id: test
+    attributes: { label: テスト要求, description: 必須観点と未実施理由 }
+    validations: { required: true }

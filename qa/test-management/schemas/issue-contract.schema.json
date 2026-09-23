@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "issueNumber",
+    "acceptanceCriteria",
+    "scope",
+    "severity",
+    "aiExecutionAllowed",
+    "missingInformation"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "issueNumber": { "type": "integer", "minimum": 1 },
+    "acceptanceCriteria": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "scope": {
+      "type": "array",
+      "items": { "enum": ["Frontend", "Backend", "API", "DB", "Infra", "Docs"] }
+    },
+    "severity": { "enum": ["low", "medium", "high", "critical"] },
+    "aiExecutionAllowed": { "type": "boolean" },
+    "missingInformation": { "type": "array", "items": { "type": "string" } }
+  }
+}

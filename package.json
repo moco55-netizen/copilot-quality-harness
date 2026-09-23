@@ -1,0 +1,22 @@
+{
+  "name": "copilot-quality-harness",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace backend\" \"npm run dev --workspace frontend\"",
+    "build": "npm run build --workspace frontend",
+    "test": "npm run test --workspace backend && npm run test --workspace frontend",
+    "test:api": "npm run test:api --workspace backend",
+    "test:e2e": "playwright test",
+    "lint": "npm run lint --workspace frontend && npm run lint --workspace backend",
+    "quality:report": "node scripts/quality-report.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "concurrently": "^9.1.2"
+  }
+}

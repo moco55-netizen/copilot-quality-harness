@@ -1,0 +1,26 @@
+name: Quality
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      # This starter repository intentionally does not commit a lockfile yet;
+      # switch to npm ci once dependency versions are frozen.
+      - run: npm install
+      - run: npm test
+      - run: npm run build
+      - run: npm run quality:report
+      - uses: actions/upload-artifact@v4
+        with:
+          name: quality-report
+          path: qa/test-management/reports/test-result.json
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
