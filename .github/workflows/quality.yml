@@ -12,22 +12,66 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
+      - id: run_metadata
+        run: echo "started_at=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
       # This starter repository intentionally does not commit a lockfile yet;
       # switch to npm ci once dependency versions are frozen.
-      - run: npm install
-      - run: npm test
-      - run: npm run test:m2
-      - run: npm run m2:validate
+      - id: install
+        run: npm install
+      - id: report_tests
+        run: npm run test:report
+      - id: unit
+        run: npm test
+      - id: m2_tests
+        run: npm run test:m2
+      - id: m2_validation
+        run: npm run m2:validate
       - uses: actions/upload-artifact@v4
         with:
           name: m2-validation-report
           path: qa/test-management/reports/m2-validation.json
-      - run: npm run build
-      - run: npm run lint
-      - run: npm run quality:report
-      - uses: actions/upload-artifact@v4
+      - id: build
+        run: npm run build
+      - id: lint
+        run: npm run lint
+      - id: playwright_install
+        run: npx playwright install --with-deps chromium
+      - id: e2e
+        run: npm run test:e2e 2>&1 | tee e2e.log
+      - name: Upload E2E failure diagnostics
+        if: failure() && steps.e2e.outcome == 'failure'
+        uses: actions/upload-artifact@v4
         with:
-          name: quality-report
-          path: qa/test-management/reports/test-result.json
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e
+          name: e2e-failure-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            test-results/
+            playwright-report/
+            e2e.log
+          if-no-files-found: warn
+          retention-days: 14
+      - id: quality_report
+        if: always()
+        env:
+          QUALITY_STARTED_AT: ${{ steps.run_metadata.outputs.started_at }}
+          QUALITY_INSTALL: ${{ steps.install.outcome }}
+          QUALITY_REPORT_TESTS: ${{ steps.report_tests.outcome }}
+          QUALITY_UNIT: ${{ steps.unit.outcome }}
+          QUALITY_M2_TESTS: ${{ steps.m2_tests.outcome }}
+          QUALITY_M2_VALIDATION: ${{ steps.m2_validation.outcome }}
+          QUALITY_BUILD: ${{ steps.build.outcome }}
+          QUALITY_LINT: ${{ steps.lint.outcome }}
+          QUALITY_PLAYWRIGHT_INSTALL: ${{ steps.playwright_install.outcome }}
+          QUALITY_E2E: ${{ steps.e2e.outcome }}
+        run: npm run quality:report
+      - name: Upload quality evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            qa/test-management/reports/test-result.json
+            qa/test-management/reports/m2-validation.json
+            backend/coverage/coverage-summary.json
+            frontend/coverage/coverage-summary.json
+          if-no-files-found: error
+          retention-days: 14

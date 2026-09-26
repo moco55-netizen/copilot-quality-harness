@@ -7,9 +7,9 @@ AIの自己申告ではなくCI実測値で結果を確定する。
 ## Required inputs
 変更ブランチ、`test-design.json`、実行環境。
 ## Procedure
-Unit、API、build、必要なE2Eを実行し、同一runIdの結果JSONと失敗証跡を保存する。
+Unit、API、build、必要なE2Eを実行し、CIの実測step status・coverage・同一runIdの結果JSONを保存する。未計測の件数等は`unmeasured`に記録する。
 ## Output contract
-`qa/test-management/reports/test-result.json`、ログ、coverage、trace/screenshot（失敗時）。
+`qa/test-management/reports/test-result.json`、coverage、Workflow Summary、E2E失敗時のログ/report/trace/screenshot/video Artifact。
 ## Stop conditions
 テスト失敗、判定不能、未実施の隠蔽、health check失敗、coverage測定不能。
 ## Do not
