@@ -1,6 +1,6 @@
 # Copilot Quality Harness
 
-最小の React + Node.js + SQLite アプリを題材に、Issue 起点の AI 開発を決定論的なテストと人間レビューで支えるためのハーネスです。M0〜M3の一部として、入力契約・Skills・決定論的なIssue→解析→テスト設計検証・テスト・CI証跡の土台を提供します。
+最小の React + Node.js + SQLite アプリを題材に、Issue 起点の AI 開発を決定論的なテストと人間レビューで支えるためのハーネスです。M0〜M4の一部として、入力契約・Skills・決定論的なIssue→解析→テスト設計検証・テスト・CI証跡・フェイルクローズのPR判断を提供します。
 
 ## Quick start
 
@@ -18,6 +18,7 @@ npm run test:e2e         # Playwright (必要なら npx playwright install)
 npm run quality:report  # qa/test-management/reports/test-result.json を生成
 npm run test:report     # 品質レポートの状態判定テスト
 npm run test:m2          # M2 CLIの決定論的テスト
+npm run test:m4          # M4 PR安全ゲートの決定論的テスト
 npm run m2:validate      # fixtures/m2/valid-issue.jsonからM2成果物を生成
 ```
 
@@ -25,7 +26,7 @@ npm run m2:validate      # fixtures/m2/valid-issue.jsonからM2成果物を生�
 
 `.github/skills/00-common-contract.md` をすべてのSkillの共通契約とし、Issue入力、影響範囲、テスト観点、実測結果、残存リスクを分離して記録します。AIの出力は提案であり、CIの実測値と人間の承認を代替しません。高リスク変更、入力不足、テスト未実施、権限不足では停止します。
 
-このスライスでは、Issue/PRテンプレート、CI（unit/API/build/E2E）、coverage測定、テスト結果JSONを提供します。Auto-merge、AIレビューの承認扱い、Branch protectionの変更は安全設計のため後続フェーズです。
+このスライスでは、Issue/PRテンプレート、CI（unit/API/build/E2E）、coverage測定、テスト結果JSON、ライブPR/Check/Review信号に基づく停止優先ゲートを提供します。AIレビューは設定済みのGitHub App Check Runだけを別シグナルとして認めます。現時点でProvider未設定・Branch protection未設定/読取不可なら明示的に停止し、AI結果や人間承認を推測しません。ゲートはauto-mergeを有効化せず、PRをマージしません。Ownerの設定要件は [`docs/m4-pr-safety-gate.md`](docs/m4-pr-safety-gate.md) を参照してください。
 
 ### CI evidence
 
