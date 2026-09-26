@@ -1,0 +1,245 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "generatedAt", "window", "source", "metrics", "unavailableMetrics", "recommendations"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "window": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "end", "endExclusive", "days"],
+      "properties": {
+        "start": { "type": "string", "format": "date-time" },
+        "end": { "type": "string", "format": "date-time" },
+        "endExclusive": { "type": "boolean", "const": true },
+        "days": { "type": "integer", "const": 14 }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reportCount", "reports", "outOfWindowReports"],
+      "properties": {
+        "reportCount": { "type": "integer", "minimum": 1, "maximum": 500 },
+        "reports": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 500,
+          "items": { "$ref": "#/$defs/sourceReport" }
+        },
+        "outOfWindowReports": {
+          "type": "array",
+          "maxItems": 500,
+          "items": { "$ref": "#/$defs/excludedReport" }
+        }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reports", "stepFailures", "coverage"],
+      "properties": {
+        "reports": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["total", "passed", "failed", "notRun"],
+          "properties": {
+            "total": { "type": "integer", "minimum": 1, "maximum": 500 },
+            "passed": { "type": "integer", "minimum": 0, "maximum": 500 },
+            "failed": { "type": "integer", "minimum": 0, "maximum": 500 },
+            "notRun": { "type": "integer", "minimum": 0, "maximum": 500 }
+          }
+        },
+        "stepFailures": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["step", "count", "evidence"],
+            "properties": {
+              "step": { "type": "string", "minLength": 1 },
+              "count": { "type": "integer", "minimum": 1, "maximum": 500 },
+              "evidence": {
+                "type": "array",
+                "minItems": 1,
+                "items": { "$ref": "#/$defs/failureEvidence" }
+              }
+            }
+          }
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["backend", "frontend"],
+          "properties": {
+            "backend": { "$ref": "#/$defs/coverage" },
+            "frontend": { "$ref": "#/$defs/coverage" }
+          }
+        }
+      }
+    },
+    "unavailableMetrics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["metric", "reason"],
+        "properties": {
+          "metric": { "type": "string", "minLength": 1 },
+          "reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "recommendations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "status", "title", "evidenceRunIds", "hypothesis", "verificationMethod", "humanApproval"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "status": { "type": "string", "const": "proposed" },
+          "title": { "type": "string", "minLength": 1 },
+          "evidenceRunIds": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "hypothesis": { "type": "string", "minLength": 1 },
+          "verificationMethod": { "type": "string", "minLength": 1 },
+          "humanApproval": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["status", "owner", "deadline"],
+            "properties": {
+              "status": { "type": "string", "const": "required" },
+              "owner": { "type": "null" },
+              "deadline": { "type": "null" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sourceReport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "runId", "attempt", "observedAt", "timestampField", "status"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "runId": { "type": "string", "minLength": 1 },
+        "attempt": { "type": ["integer", "null"], "minimum": 1 },
+        "observedAt": { "type": "string", "format": "date-time" },
+        "timestampField": { "enum": ["workflow.startedAt", "generatedAt"] },
+        "status": { "enum": ["passed", "failed", "not-run"] }
+      }
+    },
+    "excludedReport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "runId", "observedAt", "timestampField"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "runId": { "type": "string", "minLength": 1 },
+        "observedAt": { "type": "string", "format": "date-time" },
+        "timestampField": { "enum": ["workflow.startedAt", "generatedAt"] }
+      }
+    },
+    "failureEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "runId"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "runId": { "type": "string", "minLength": 1 }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["observed", "unavailableReports", "summary"],
+      "properties": {
+        "observed": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "runId", "observedAt", "metrics"],
+            "properties": {
+              "path": { "type": "string", "minLength": 1 },
+              "runId": { "type": "string", "minLength": 1 },
+              "observedAt": { "type": "string", "format": "date-time" },
+              "metrics": { "$ref": "#/$defs/coverageMetrics" }
+            }
+          }
+        },
+        "unavailableReports": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "runId", "observedAt", "reason"],
+            "properties": {
+              "path": { "type": "string", "minLength": 1 },
+              "runId": { "type": "string", "minLength": 1 },
+              "observedAt": { "type": "string", "format": "date-time" },
+              "reason": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "summary": { "$ref": "#/$defs/coverageSummary" }
+      }
+    },
+    "coverageMetrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["statements", "branches", "functions", "lines"],
+      "properties": {
+        "statements": { "$ref": "#/$defs/coverageMeasurement" },
+        "branches": { "$ref": "#/$defs/coverageMeasurement" },
+        "functions": { "$ref": "#/$defs/coverageMeasurement" },
+        "lines": { "$ref": "#/$defs/coverageMeasurement" }
+      }
+    },
+    "coverageMeasurement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["covered", "total", "percent"],
+      "properties": {
+        "covered": { "type": "number", "minimum": 0 },
+        "total": { "type": "number", "minimum": 0 },
+        "percent": { "type": "number", "minimum": 0, "maximum": 100 }
+      }
+    },
+    "coverageSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["statements", "branches", "functions", "lines"],
+      "properties": {
+        "statements": { "$ref": "#/$defs/coverageSummaryMetric" },
+        "branches": { "$ref": "#/$defs/coverageSummaryMetric" },
+        "functions": { "$ref": "#/$defs/coverageSummaryMetric" },
+        "lines": { "$ref": "#/$defs/coverageSummaryMetric" }
+      }
+    },
+    "coverageSummaryMetric": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["observations", "meanPercent", "minPercent", "maxPercent"],
+          "properties": {
+            "observations": { "type": "integer", "minimum": 1, "maximum": 500 },
+            "meanPercent": { "type": "number", "minimum": 0, "maximum": 100 },
+            "minPercent": { "type": "number", "minimum": 0, "maximum": 100 },
+            "maxPercent": { "type": "number", "minimum": 0, "maximum": 100 }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -24,11 +24,12 @@
     "steps": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["install", "reportTests", "unit", "m2Tests", "m2Validation", "build", "lint", "playwrightInstall", "e2e"],
+      "required": ["install", "reportTests", "unit", "m5Tests", "m2Tests", "m2Validation", "build", "lint", "playwrightInstall", "e2e"],
       "properties": {
         "install": { "$ref": "#/$defs/step" },
         "reportTests": { "$ref": "#/$defs/step" },
         "unit": { "$ref": "#/$defs/step" },
+        "m5Tests": { "$ref": "#/$defs/step" },
         "m2Tests": { "$ref": "#/$defs/step" },
         "m2Validation": { "$ref": "#/$defs/step" },
         "build": { "$ref": "#/$defs/step" },

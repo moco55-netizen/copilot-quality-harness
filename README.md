@@ -19,6 +19,7 @@ npm run quality:report  # qa/test-management/reports/test-result.json を生成
 npm run test:report     # 品質レポートの状態判定テスト
 npm run test:m2          # M2 CLIの決定論的テスト
 npm run test:m4          # M4 PR安全ゲートの決定論的テスト
+npm run test:m5          # M5 fortnightly retrospectiveの決定論的テスト
 npm run m2:validate      # fixtures/m2/valid-issue.jsonからM2成果物を生成
 ```
 
@@ -30,9 +31,19 @@ npm run m2:validate      # fixtures/m2/valid-issue.jsonからM2成果物を生�
 
 ### CI evidence
 
-GitHub Actions collects the actual outcome of install, unit, M2 validation, build, lint, and E2E steps into `test-result.json`; failed or skipped steps are never represented as passed. The job summary is rendered from that same JSON, and the JSON plus available coverage summaries are uploaded as `quality-evidence-<run-id>-<attempt>` for 14 days. Playwright traces, screenshots, video, HTML report, and captured E2E log are uploaded on E2E failure for 14 days.
+GitHub Actions collects the actual outcome of install, report tests, unit, M5 tests, M2 validation, build, lint, and E2E steps into `test-result.json`; failed or skipped steps are never represented as passed. The job summary is rendered from that same JSON, and the JSON plus available coverage summaries are uploaded as `quality-evidence-<run-id>-<attempt>` for 14 days. Playwright traces, screenshots, video, HTML report, and captured E2E log are uploaded on E2E failure for 14 days.
 
 Frontend `App.jsx` and backend `app.js`/`db.js` coverage is measured with Vitest V8. Every coverage metric (statements, branches, functions, and lines) must meet the documented 10% minimum; the test run and final report both fail closed when coverage is missing or below threshold. Test counts, retry counts, and coverage deltas are not emitted by the current runners and are explicitly marked unmeasured.
+
+### M5 fortnightly retrospective
+
+The deterministic M5 CLI reads only existing M3 `test-result.json` reports supplied as files or directories. Owners manually download and retain the Quality workflow's 14-day artifacts; no automatic artifact collection or schedule is configured. Provide an explicit 14-day UTC interval (inclusive start, exclusive end):
+
+```bash
+npm run m5:retrospective -- --input ./downloaded-quality-artifacts --start 2026-09-01T00:00:00Z --end 2026-09-15T00:00:00Z
+```
+
+It writes `retrospective.json` and `retrospective.md` under `qa/test-management/retrospectives/`. Only observed run IDs/timestamps, report outcomes, actual step failures, and measured backend/frontend coverage are summarized. PR conversion, complete retry counts, false positives, human decisions/adoption, issue outcomes, and trend baselines remain unavailable when the reports do not contain them. Recommendations remain `proposed`, include a hypothesis and verification method, and require a human owner and deadline before acceptance; the CLI never changes workflows or thresholds. See [`docs/m5-fortnightly-retrospective.md`](docs/m5-fortnightly-retrospective.md).
 
 ## Repository map
 

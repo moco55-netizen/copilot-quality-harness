@@ -11,6 +11,7 @@ const STEP_DEFINITIONS = [
   { id: 'install', environment: 'QUALITY_INSTALL', command: 'npm install' },
   { id: 'reportTests', environment: 'QUALITY_REPORT_TESTS', command: 'npm run test:report' },
   { id: 'unit', environment: 'QUALITY_UNIT', command: 'npm test' },
+  { id: 'm5Tests', environment: 'QUALITY_M5_TESTS', command: 'npm run test:m5' },
   { id: 'm2Tests', environment: 'QUALITY_M2_TESTS', command: 'npm run test:m2' },
   { id: 'm2Validation', environment: 'QUALITY_M2_VALIDATION', command: 'npm run m2:validate' },
   { id: 'build', environment: 'QUALITY_BUILD', command: 'npm run build' },

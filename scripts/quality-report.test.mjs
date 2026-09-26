@@ -10,6 +10,7 @@ const successfulSteps = {
   QUALITY_INSTALL: 'success',
   QUALITY_REPORT_TESTS: 'success',
   QUALITY_UNIT: 'success',
+  QUALITY_M5_TESTS: 'success',
   QUALITY_M2_TESTS: 'success',
   QUALITY_M2_VALIDATION: 'success',
   QUALITY_BUILD: 'success',
