@@ -1,0 +1,134 @@
+name: PR safety gate
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  pull_request_review:
+    types: [submitted, edited, dismissed]
+permissions:
+  contents: read
+  pull-requests: read
+  checks: read
+  statuses: read
+jobs:
+  decision:
+    if: github.event.pull_request != null
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Collect live pull request signals
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          AI_REVIEW_APP_ID: ${{ vars.AI_REVIEW_APP_ID }}
+        run: |
+          set -euo pipefail
+          mkdir -p qa/test-management/reports
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+          repository="repos/$GITHUB_REPOSITORY"
+          pr_endpoint="$repository/pulls/$PR_NUMBER"
+
+          fetch_object() {
+            local endpoint="$1"
+            local output="$2"
+            if gh api "$endpoint" > "$output" 2>/dev/null; then
+              printf 'true'
+            else
+              printf 'false'
+              printf 'null\n' > "$output"
+            fi
+          }
+          fetch_items() {
+            local endpoint="$1"
+            local filter="$2"
+            local output="$3"
+            local lines="$tmp/items.ndjson"
+            if gh api --paginate --jq "$filter" "$endpoint" > "$lines" 2>/dev/null &&
+              jq -s '.' "$lines" > "$output" 2>/dev/null; then
+              printf 'true'
+            else
+              printf 'false'
+              printf '[]\n' > "$output"
+            fi
+          }
+
+          pr_first_ok="$(fetch_object "$pr_endpoint" "$tmp/pr-first.json")"
+          pr_first="$(cat "$tmp/pr-first.json")"
+          base_ref="$(jq -r 'if type == "object" then .base.ref // empty else empty end' "$tmp/pr-first.json")"
+          protection_ok=false
+          printf 'null\n' > "$tmp/protection.json"
+          if [ -n "$base_ref" ]; then
+            encoded_base_ref="$(jq -rn --arg value "$base_ref" '$value | @uri')"
+            protection_ok="$(fetch_object "$repository/branches/$encoded_base_ref/protection" "$tmp/protection.json")"
+          fi
+
+          reviews_ok="$(fetch_items "$pr_endpoint/reviews?per_page=100" '.[]' "$tmp/reviews.json")"
+          checks_ok="$(fetch_items "$repository/commits/$EXPECTED_HEAD_SHA/check-runs?per_page=100" '.check_runs[]' "$tmp/check-runs.json")"
+          statuses_ok="$(fetch_items "$repository/commits/$EXPECTED_HEAD_SHA/statuses?per_page=100" '.[]' "$tmp/statuses.json")"
+          pr_latest_ok="$(fetch_object "$pr_endpoint" "$tmp/pr-latest.json")"
+          if [ "$pr_latest_ok" = true ]; then
+            pr_json="$(cat "$tmp/pr-latest.json")"
+          else
+            pr_json="$pr_first"
+          fi
+          pr_read_ok=false
+          if [ "$pr_first_ok" = true ] && [ "$pr_latest_ok" = true ]; then
+            pr_read_ok=true
+          fi
+
+          observed_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          jq -n \
+            --arg repository "$GITHUB_REPOSITORY" \
+            --arg runId "$GITHUB_RUN_ID" \
+            --arg expectedHeadSha "$EXPECTED_HEAD_SHA" \
+            --arg observedAt "$observed_at" \
+            --argjson pullRequest "$pr_json" \
+            --slurpfile branchProtection "$tmp/protection.json" \
+            --slurpfile checkRuns "$tmp/check-runs.json" \
+            --slurpfile statuses "$tmp/statuses.json" \
+            --slurpfile reviews "$tmp/reviews.json" \
+            --argjson pullRequestsRead "$pr_read_ok" \
+            --argjson reviewsRead "$reviews_ok" \
+            --argjson checksRead "$checks_ok" \
+            --argjson statusesRead "$statuses_ok" \
+            --argjson protectionRead "$protection_ok" \
+            '{
+              schemaVersion: 1,
+              runId: $runId,
+              repository: $repository,
+              expectedHeadSha: $expectedHeadSha,
+              observedAt: $observedAt,
+              pullRequest: $pullRequest,
+              branchProtection: ($branchProtection[0] // null),
+              checkRuns: ($checkRuns[0] // []),
+              statuses: ($statuses[0] // []),
+              reviews: ($reviews[0] // []),
+              permissions: {
+                pullRequestsRead: $pullRequestsRead,
+                reviewsRead: $reviewsRead,
+                checksRead: $checksRead,
+                statusesRead: $statusesRead,
+                protectionRead: $protectionRead
+              }
+            }' > qa/test-management/reports/pr-safety-gate-input.json
+      - name: Evaluate fail-closed merge decision
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          AI_REVIEW_APP_ID: ${{ vars.AI_REVIEW_APP_ID }}
+        run: node scripts/pr-safety-gate.mjs --input qa/test-management/reports/pr-safety-gate-input.json --output qa/test-management/reports/pr-safety-gate.json
+      - name: Upload gate evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-safety-gate-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            qa/test-management/reports/pr-safety-gate-input.json
+            qa/test-management/reports/pr-safety-gate.json
+          if-no-files-found: warn
+          retention-days: 14

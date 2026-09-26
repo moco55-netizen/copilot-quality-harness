@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "runId",
+    "generatedAt",
+    "repository",
+    "pullRequestNumber",
+    "expectedHeadSha",
+    "observedAt",
+    "decision",
+    "autoMergeEnabled",
+    "aiReview",
+    "conditions",
+    "reasons",
+    "manualHandoff"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "runId": { "type": "string", "minLength": 1 },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "repository": { "type": ["string", "null"] },
+    "pullRequestNumber": { "type": ["integer", "null"], "minimum": 1 },
+    "expectedHeadSha": { "type": ["string", "null"] },
+    "observedAt": { "type": ["string", "null"], "format": "date-time" },
+    "decision": { "enum": ["stop", "eligible-for-human-handoff"] },
+    "autoMergeEnabled": { "type": "boolean", "const": false },
+    "aiReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "riskLevel", "checkRunId", "appId"],
+      "properties": {
+        "status": { "enum": ["passed", "failed", "unavailable"] },
+        "riskLevel": { "type": ["string", "null"], "enum": ["low", "medium", "high", "critical", null] },
+        "checkRunId": { "type": ["integer", "null"] },
+        "appId": { "type": ["string", "null"] }
+      }
+    },
+    "conditions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "inputsCurrent",
+        "permissionsAvailable",
+        "sameRepository",
+        "currentHead",
+        "notDraft",
+        "protectionConfigured",
+        "requiredChecksSuccessful",
+        "humanApproval",
+        "aiReviewSuccessful",
+        "riskAcceptable"
+      ],
+      "properties": {
+        "inputsCurrent": { "type": "boolean" },
+        "permissionsAvailable": { "type": "boolean" },
+        "sameRepository": { "type": "boolean" },
+        "currentHead": { "type": "boolean" },
+        "notDraft": { "type": "boolean" },
+        "protectionConfigured": { "type": "boolean" },
+        "requiredChecksSuccessful": { "type": "boolean" },
+        "humanApproval": { "type": "boolean" },
+        "aiReviewSuccessful": { "type": "boolean" },
+        "riskAcceptable": { "type": "boolean" }
+      }
+    },
+    "reasons": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "manualHandoff": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } }
+  }
+}
