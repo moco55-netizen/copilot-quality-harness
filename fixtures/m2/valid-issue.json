@@ -1,10 +1,20 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "issueNumber": 12,
+  "title": "Validate the issue workflow",
+  "source": {
+    "kind": "local-fixture",
+    "repository": "local",
+    "issueNumber": 12,
+    "issueUrl": "",
+    "bodySha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
   "acceptanceCriteria": ["The validation flow produces a complete test design."],
+  "testRequirements": ["Run deterministic unit tests."],
   "scope": ["Docs", "Infra"],
   "severity": "low",
-  "aiExecutionAllowed": true,
+  "automationAllowed": true,
   "missingInformation": [],
+  "policyStops": [],
   "targetPaths": ["README.md", ".github/skills/03-test-observation-design.md"]
 }

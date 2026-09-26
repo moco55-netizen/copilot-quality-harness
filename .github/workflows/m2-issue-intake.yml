@@ -1,0 +1,114 @@
+name: M2 Issue Intake
+
+on:
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: Open issue number in this repository
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  intake:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Validate dispatch input
+        id: input
+        env:
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+        run: |
+          node --input-type=module -e '
+            import { validateDispatchIssueNumber } from "./scripts/m2-validation.mjs";
+            const result = validateDispatchIssueNumber(process.env.ISSUE_NUMBER);
+            if (!result.valid) {
+              console.error(result.error);
+              process.exit(2);
+            }
+            process.stdout.write(`issue_number=${result.issueNumber}\n`);
+          ' >> "$GITHUB_OUTPUT"
+      - name: Fetch trusted same-repository issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ steps.input.outputs.issue_number }}
+        run: gh api "repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}" > "$RUNNER_TEMP/m2-issue.json"
+      - name: Run read-only triage, repository analysis, and test design
+        id: analyze
+        env:
+          ISSUE_NUMBER: ${{ steps.input.outputs.issue_number }}
+          OUTPUT_FILE: ${{ runner.temp }}/m2-report.json
+        run: |
+          set +e
+          node scripts/m2-validation.mjs \
+            --github-issue "$RUNNER_TEMP/m2-issue.json" \
+            --issue-number "$ISSUE_NUMBER" \
+            --repository "$GITHUB_REPOSITORY" \
+            --catalog qa/test-management/test-observation-catalog.yml \
+            --root . \
+            --output "$OUTPUT_FILE"
+          result=$?
+          echo "validation_exit_code=$result" >> "$GITHUB_OUTPUT"
+          if [ "$result" -eq 4 ]; then exit 4; fi
+          exit 0
+      - name: Comment with the deterministic result
+        if: always() && steps.analyze.outcome != 'skipped'
+        uses: actions/github-script@v7
+        env:
+          ISSUE_NUMBER: ${{ steps.input.outputs.issue_number }}
+          REPORT_FILE: ${{ runner.temp }}/m2-report.json
+        with:
+          script: |
+            const fs = require('node:fs');
+            if (!fs.existsSync(process.env.REPORT_FILE)) {
+              core.warning('No M2 report was produced; no Issue comment was posted.');
+              return;
+            }
+            const report = JSON.parse(fs.readFileSync(process.env.REPORT_FILE, 'utf8'));
+            if (report.sourceTrust?.verified !== true) {
+              core.warning('Issue source was not verified; no Issue comment was posted.');
+              return;
+            }
+            const lines = [
+              `## M2 read-only intake: ${report.status}`,
+              '',
+              `Issue: #${report.sourceTrust.issueNumber}`,
+              `Source: \`${report.sourceTrust.repository}\` (verified same-repository payload)`,
+              'Model calls: none',
+              'Source writes, branch creation, and PR creation: none',
+              `Report artifact: [M2 intake run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`
+            ];
+            const reasons = report.stopConditions ?? report.errors ?? [];
+            if (reasons.length) {
+              lines.push('', 'Stop details:', ...reasons.map((reason) => `- ${reason}`));
+            }
+            if (report.handoff) {
+              lines.push(
+                '',
+                `Human-review handoff only: suggested branch \`${report.handoff.suggestedBranch}\`.`,
+                'Implementation is not authorized by this workflow; review the artifact and make any implementation decision manually.'
+              );
+            }
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: Number(process.env.ISSUE_NUMBER),
+              body: lines.join('\n')
+            });
+      - name: Upload M2 report artifact
+        if: always() && steps.analyze.outcome != 'skipped'
+        uses: actions/upload-artifact@v4
+        with:
+          name: m2-issue-${{ steps.input.outputs.issue_number }}-run-${{ github.run_id }}
+          path: ${{ runner.temp }}/m2-report.json
+          if-no-files-found: warn
+          retention-days: 14

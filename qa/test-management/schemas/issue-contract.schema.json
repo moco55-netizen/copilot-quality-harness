@@ -1,26 +1,70 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "issue-contract.schema.json",
   "type": "object",
+  "additionalProperties": false,
   "required": [
     "schemaVersion",
     "issueNumber",
+    "title",
+    "source",
     "acceptanceCriteria",
+    "testRequirements",
     "scope",
     "severity",
-    "aiExecutionAllowed",
-    "missingInformation"
+    "automationAllowed",
+    "missingInformation",
+    "policyStops",
+    "targetPaths"
   ],
   "properties": {
-    "schemaVersion": { "type": "integer", "const": 1 },
-    "issueNumber": { "type": "integer", "minimum": 1 },
-    "acceptanceCriteria": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "schemaVersion": { "const": 2 },
+    "issueNumber": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+    "title": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "repository", "issueNumber", "issueUrl", "bodySha256"],
+      "properties": {
+        "kind": { "enum": ["github-issue", "local-fixture"] },
+        "repository": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "issueNumber": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+        "issueUrl": { "type": "string", "maxLength": 500 },
+        "bodySha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      }
+    },
+    "acceptanceCriteria": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 20,
+      "items": { "type": "string", "minLength": 1, "maxLength": 500 }
+    },
+    "testRequirements": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 20,
+      "items": { "type": "string", "minLength": 1, "maxLength": 500 }
+    },
     "scope": {
       "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
       "items": { "enum": ["Frontend", "Backend", "API", "DB", "Infra", "Docs"] }
     },
     "severity": { "enum": ["low", "medium", "high", "critical"] },
-    "aiExecutionAllowed": { "type": "boolean" },
-    "missingInformation": { "type": "array", "items": { "type": "string" } }
-    ,"targetPaths": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+    "automationAllowed": { "type": "boolean" },
+    "missingInformation": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "maxLength": 200 }
+    },
+    "policyStops": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "maxLength": 300 }
+    },
+    "targetPaths": {
+      "type": "array",
+      "maxItems": 50,
+      "items": { "type": "string", "minLength": 1, "maxLength": 512 }
+    }
   }
 }
