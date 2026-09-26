@@ -1,6 +1,6 @@
 # Copilot Quality Harness
 
-最小の React + Node.js + SQLite アプリを題材に、Issue 起点の AI 開発を決定論的なテストと人間レビューで支えるためのハーネスです。M0〜M2では、入力契約・Skills・決定論的なIssue→解析→テスト設計検証・テスト・CIの土台を提供します。
+最小の React + Node.js + SQLite アプリを題材に、Issue 起点の AI 開発を決定論的なテストと人間レビューで支えるためのハーネスです。M0〜M3の一部として、入力契約・Skills・決定論的なIssue→解析→テスト設計検証・テスト・CI証跡の土台を提供します。
 
 ## Quick start
 
@@ -16,6 +16,7 @@ npm test                 # frontend unit + backend API
 npm run build            # frontend production build
 npm run test:e2e         # Playwright (必要なら npx playwright install)
 npm run quality:report  # qa/test-management/reports/test-result.json を生成
+npm run test:report     # 品質レポートの状態判定テスト
 npm run test:m2          # M2 CLIの決定論的テスト
 npm run m2:validate      # fixtures/m2/valid-issue.jsonからM2成果物を生成
 ```
@@ -24,7 +25,13 @@ npm run m2:validate      # fixtures/m2/valid-issue.jsonからM2成果物を生�
 
 `.github/skills/00-common-contract.md` をすべてのSkillの共通契約とし、Issue入力、影響範囲、テスト観点、実測結果、残存リスクを分離して記録します。AIの出力は提案であり、CIの実測値と人間の承認を代替しません。高リスク変更、入力不足、テスト未実施、権限不足では停止します。
 
-最初のスライスでは、Issueテンプレート、PRテンプレート、CI（unit/API/build/E2E）、テスト結果JSONを提供します。Auto-merge、AIレビューの承認扱い、Branch protectionの変更は安全設計のため後続フェーズです。
+このスライスでは、Issue/PRテンプレート、CI（unit/API/build/E2E）、coverage測定、テスト結果JSONを提供します。Auto-merge、AIレビューの承認扱い、Branch protectionの変更は安全設計のため後続フェーズです。
+
+### CI evidence
+
+GitHub Actions collects the actual outcome of install, unit, M2 validation, build, lint, and E2E steps into `test-result.json`; failed or skipped steps are never represented as passed. The job summary is rendered from that same JSON, and the JSON plus available coverage summaries are uploaded as `quality-evidence-<run-id>-<attempt>` for 14 days. Playwright traces, screenshots, video, HTML report, and captured E2E log are uploaded on E2E failure for 14 days.
+
+Frontend `App.jsx` and backend `app.js`/`db.js` coverage is measured with Vitest V8. Every coverage metric (statements, branches, functions, and lines) must meet the documented 10% minimum; the test run and final report both fail closed when coverage is missing or below threshold. Test counts, retry counts, and coverage deltas are not emitted by the current runners and are explicitly marked unmeasured.
 
 ## Repository map
 
