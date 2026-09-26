@@ -109,7 +109,7 @@ function issueSourceErrors(payload, expectedRepository, requestedIssueNumber) {
   if (!Number.isSafeInteger(payload.number) || payload.number !== requestedIssueNumber) errors.push('fetched issue number does not match dispatch input');
   if (typeof expectedRepository !== 'string' || !/^[^/]+\/[^/]+$/.test(expectedRepository)) errors.push('expected repository must use owner/repository form');
   const repoPath = `/repos/${expectedRepository ?? ''}`;
-  const issuePath = `${repoPath}/issues/${requestedIssueNumber}`;
+  const issuePath = `/${expectedRepository ?? ''}/issues/${requestedIssueNumber}`;
   if (!repositoryFromUrl(payload.repository_url, 'api.github.com', repoPath)) errors.push('issue payload is not from the expected GitHub repository');
   if (!repositoryFromUrl(payload.html_url, 'github.com', issuePath)) errors.push('issue URL does not match the expected repository and issue number');
   if (payload.pull_request) errors.push('pull requests are not eligible for issue intake');
