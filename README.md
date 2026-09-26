@@ -37,6 +37,14 @@ npm run m2:validate      # fixtures/m2/valid-issue.jsonからM2成果物を生�
 
 ## M2 validation contract
 
-`scripts/m2-validation.mjs` はネットワークアクセスやソースツリーへの書き込みを行わず、`--issue`（Issue契約JSON）、`--catalog`（観点カタログYAML）、`--root`（解析対象ルート）、`--output`（成果物出力先）を受け取ります。出力契約は `qa/test-management/schemas/m2-validation.schema.json` で定義し、`status`、`issue`、`analysis`（候補パス、分類、参照検証）、`testDesign`（カタログ全項目と受入条件）を含む決定論的JSONです。
+`scripts/m2-validation.mjs` は `--issue`（ローカルIssue契約JSON）または同一リポジトリから取得した `--github-issue`、`--catalog`（観点カタログYAML）、`--root`（解析対象ルート）、`--output`（成果物出力先）を受け取ります。GitHub Issueモードでは要求番号、API/HTML URL、Issue種別、open状態を検証し、本文は決められた見出しからだけ抽出します。本文をプロンプトや実行コードとして扱う処理はありません。出力契約は `qa/test-management/schemas/m2-validation.schema.json` で定義し、`sourceTrust`、`analysis`、`testDesign`、実装を許可しない人間レビュー用`handoff`を含む決定論的JSONです。
 
-終了コードは `0=成功`、`2=契約/参照不正`、`3=安全停止（high/critical、不足情報、実行不許可）`、`4=入出力エラー` です。`targetPaths` はリポジトリ相対パスのみ許可され、存在しない参照や親ディレクトリ参照は停止します。
+終了コードは `0=人間レビュー可能`、`2=契約/参照不正`、`3=安全停止（high/critical、不足情報、制限超過、禁止範囲）`、`4=入出力エラー` です。`targetPaths` はリポジトリ相対パスのみ許可され、存在しない参照や親ディレクトリ参照は停止します。Issue本文・受入条件・テスト観点・参照ファイル数には上限を設けています。
+
+### Manual GitHub Actions intake
+
+1. `.github/workflows/m2-issue-intake.yml` の **Run workflow** を既定ブランチで手動実行し、このリポジトリで開いているIssue番号を入力します。既定ブランチ以外からの実行は拒否されます。
+2. Issueフォームの `受入条件`、`影響範囲`（Frontend/Backend/API/DB/Infra/Docs）、`リスク`（low/medium/high/critical）、`テスト要求`を記入してください。高/critical、不足情報、認証・個人情報・決済・破壊的DB操作の記述、入力上限超過は停止し、可能な場合は理由をIssueコメントに残します。
+3. 成功・停止いずれも14日保持のJSON Artifactとして記録します。成功時も提案するのは `work/issue-N` 形式のブランチ名だけで、ブランチ作成・実装・テスト実行・PR作成は行わず、人間のレビューと別途の明示的承認が必要です。
+
+Workflow権限は `contents: read` とIssueへの説明コメントに必要な `issues: write` のみです。リポジトリまたはOrganizationのActions設定で、`GITHUB_TOKEN`によるIssueコメント書き込みを許可してください。追加Secrets、`COPILOT_GITHUB_TOKEN`、GitHub App、外部モデル呼び出しは不要です。本文は同一リポジトリのGitHub Issues APIから取得し、原文はArtifactに保存しません。

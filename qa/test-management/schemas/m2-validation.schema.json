@@ -1,26 +1,153 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "m2-validation.schema.json",
   "type": "object",
-  "required": ["exitCode", "status"],
+  "additionalProperties": false,
+  "required": ["schemaVersion", "exitCode", "status", "errors", "sourceTrust", "modelCalls"],
   "properties": {
+    "schemaVersion": { "const": 2 },
     "exitCode": { "type": "integer", "enum": [0, 2, 3, 4] },
-    "status": { "enum": ["ok", "invalid", "unsafe-stop", "io-error"] },
+    "status": { "enum": ["ready-for-human-review", "invalid", "unsafe-stop", "io-error"] },
     "errors": { "type": "array", "items": { "type": "string" } },
-    "issue": { "$ref": "issue-contract.schema.json" },
+    "stopConditions": { "type": "array", "items": { "type": "string" } },
+    "modelCalls": { "const": false },
+    "sourceTrust": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["verified", "kind", "repository", "issueNumber", "issueUrl"],
+      "properties": {
+        "verified": { "type": "boolean" },
+        "kind": { "enum": ["github-issue", "local-fixture", "unverified"] },
+        "repository": { "type": "string", "maxLength": 200 },
+        "issueNumber": { "type": ["integer", "null"], "minimum": 1, "maximum": 2147483647 },
+        "issueUrl": { "type": "string", "maxLength": 500 }
+      }
+    },
+    "issue": { "$ref": "#/$defs/issue" },
     "analysis": {
       "type": "object",
-      "required": ["schemaVersion", "candidates", "references", "valid", "scope"],
+      "additionalProperties": false,
+      "required": ["schemaVersion", "root", "candidates", "references", "valid", "scope"],
       "properties": {
-        "schemaVersion": { "const": 1 },
-        "candidates": { "type": "array" },
-        "references": { "type": "array", "items": { "type": "string" } },
+        "schemaVersion": { "const": 2 },
+        "root": { "const": "." },
+        "candidates": {
+          "type": "array",
+          "maxItems": 5000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "classification", "exists", "referenceValid"],
+            "properties": {
+              "path": { "type": "string", "minLength": 1, "maxLength": 512 },
+              "classification": { "$ref": "#/$defs/scope" },
+              "exists": { "type": "boolean" },
+              "referenceValid": { "type": "boolean" }
+            }
+          }
+        },
+        "references": { "type": "array", "items": { "type": "string", "maxLength": 512 } },
         "valid": { "type": "boolean" },
-        "scope": { "type": "array", "items": { "type": "string" } }
+        "scope": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/scope" } }
       }
     },
     "testDesign": {
       "type": "object",
-      "required": ["schemaVersion", "issueNumber", "observations", "acceptanceCriteria", "referencedPaths"]
+      "additionalProperties": false,
+      "required": ["schemaVersion", "issueNumber", "observations", "acceptanceCriteria", "testRequirements", "referencedPaths"],
+      "properties": {
+        "schemaVersion": { "const": 2 },
+        "issueNumber": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+        "observations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "status", "reason", "level", "residualRisk"],
+            "properties": {
+              "id": { "type": "string", "minLength": 1, "maxLength": 100 },
+              "status": { "const": "planned" },
+              "reason": { "type": "string", "minLength": 1, "maxLength": 300 },
+              "level": { "enum": ["unit", "e2e"] },
+              "residualRisk": { "type": "string", "minLength": 1, "maxLength": 300 }
+            }
+          }
+        },
+        "acceptanceCriteria": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "criterion", "observationIds"],
+            "properties": {
+              "id": { "type": "string", "pattern": "^acceptance-[1-9][0-9]*$" },
+              "criterion": { "type": "string", "minLength": 1, "maxLength": 500 },
+              "observationIds": { "type": "array", "minItems": 1, "items": { "type": "string", "maxLength": 100 } }
+            }
+          }
+        },
+        "testRequirements": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1, "maxLength": 500 } },
+        "referencedPaths": { "type": "array", "maxItems": 5000, "items": { "type": "string", "maxLength": 512 } }
+      }
+    },
+    "handoff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "suggestedBranch", "implementationAllowed", "requiresManualApproval", "constrainedInputs"],
+      "properties": {
+        "mode": { "const": "human-review-only" },
+        "suggestedBranch": { "type": "string", "pattern": "^work/issue-[1-9][0-9]*$" },
+        "implementationAllowed": { "const": false },
+        "requiresManualApproval": { "const": true },
+        "constrainedInputs": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["repository", "issueNumber", "issueUrl", "baseRef"],
+          "properties": {
+            "repository": { "type": "string", "minLength": 3, "maxLength": 200 },
+            "issueNumber": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+            "issueUrl": { "type": "string", "format": "uri", "maxLength": 500 },
+            "baseRef": { "const": "main" }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "scope": { "enum": ["Frontend", "Backend", "API", "DB", "Infra", "Docs"] },
+    "issue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "issueNumber", "title", "source", "acceptanceCriteria", "testRequirements", "scope", "severity", "automationAllowed", "missingInformation", "policyStops", "targetPaths"],
+      "properties": {
+        "schemaVersion": { "const": 2 },
+        "issueNumber": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+        "title": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "repository", "issueNumber", "issueUrl", "bodySha256"],
+          "properties": {
+            "kind": { "enum": ["github-issue", "local-fixture"] },
+            "repository": { "type": "string", "minLength": 1, "maxLength": 200 },
+            "issueNumber": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+            "issueUrl": { "type": "string", "maxLength": 500 },
+            "bodySha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+          }
+        },
+        "acceptanceCriteria": { "type": "array", "minItems": 1, "maxItems": 20, "items": { "type": "string", "minLength": 1, "maxLength": 500 } },
+        "testRequirements": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1, "maxLength": 500 } },
+        "scope": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/scope" } },
+        "severity": { "enum": ["low", "medium", "high", "critical"] },
+        "automationAllowed": { "type": "boolean" },
+        "missingInformation": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 200 } },
+        "policyStops": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 300 } },
+        "targetPaths": { "type": "array", "maxItems": 50, "items": { "type": "string", "minLength": 1, "maxLength": 512 } }
+      }
     }
   }
 }
