@@ -1,12 +1,12 @@
-# M5 fortnightly retrospective
+# M5 隔週品質振り返り
 
-M5 is a deterministic, local CLI over existing M3 `test-result.json` evidence. It does not call GitHub APIs, collect artifacts, use an AI provider, or write to GitHub.
+M5は、既存のM3 `test-result.json`証跡を入力として、ローカルで決定論的に実行するCLIです。GitHub APIの呼び出し、Artifactの収集、AIプロバイダーの利用、GitHubへの書き込みは行いません。
 
-## Collecting source reports
+## 元レポートの取得
 
-The Quality workflow uploads `quality-evidence-<run-id>-<attempt>` artifacts with a 14-day retention period. An owner must download the artifacts and retain or supply the extracted `test-result.json` files for the retrospective window. Artifact download/source collection is manual; the repository does not configure a scheduled run, API collection, or longer retention. Reports older than artifact retention cannot be recovered by this tool.
+Qualityワークフローは`quality-evidence-<run-id>-<attempt>`というArtifactをアップロードし、14日間保持します。OwnerはArtifactを手動でダウンロードし、対象期間の`test-result.json`を取り出して保管するか、入力として指定してください。Artifactの取得・元データの収集は手動です。定期実行、APIによる収集、保持期間の延長は設定していません。Artifactの保持期間を過ぎたレポートは、このツールでは復元できません。
 
-Supply one or more report files or directories containing `test-result.json` files, and an explicit 14-day UTC interval. The start is inclusive and the end is exclusive:
+`test-result.json`ファイルまたはそのファイルを含むディレクトリを1つ以上指定し、UTCで14日間の期間を明示してください。開始日時を含み、終了日時は含みません。
 
 ```bash
 npm run m5:retrospective -- \
@@ -16,23 +16,23 @@ npm run m5:retrospective -- \
   --output-dir ./qa/test-management/retrospectives
 ```
 
-Repeat `--input` for multiple paths. File inputs are read as M3 reports; directory inputs are searched recursively for files named `test-result.json`. The report timestamp is `workflow.startedAt` when present, otherwise the observed `generatedAt`. Every report is validated before filtering. Reports at the end boundary or outside the selected interval are listed as excluded. No matching reports, invalid windows, malformed reports, unreadable inputs, and output-write errors stop generation with a nonzero exit code:
+複数のパスを指定する場合は`--input`を繰り返します。ファイル入力はM3レポートとして読み込み、ディレクトリ入力は`test-result.json`という名前のファイルを再帰的に検索します。対象判定に使う日時は、`workflow.startedAt`があればその値、なければレポートの`generatedAt`です。期間フィルターの前に、入力レポートをすべて検証します。終了境界上のレポートや期間外のレポートは除外一覧に記載します。該当レポートがない、期間が不正、レポート形式が不正、入力を読み取れない、出力に失敗した場合は、0以外の終了コードで停止します。
 
-| Exit code | Meaning |
+| 終了コード | 意味 |
 | ---: | --- |
-| 0 | Retrospective written |
-| 2 | Invalid arguments/window or malformed report |
-| 3 | No report files found or no reports within the window |
-| 4 | Input/output I/O failure |
+| 0 | 振り返りを出力 |
+| 2 | 引数・期間が不正、またはレポート形式が不正 |
+| 3 | レポートが見つからない、または期間内にレポートがない |
+| 4 | 入出力エラー |
 
-Output is `retrospective.json` plus `retrospective.md`; the JSON contract is `qa/test-management/schemas/retrospective.schema.json`. Input is capped at 500 reports per invocation. No output is written if input validation or window selection fails.
+出力先には`retrospective.json`と`retrospective.md`を生成します。JSON契約は`qa/test-management/schemas/retrospective.schema.json`です。1回の実行で読み込めるレポートは最大500件です。入力検証または期間判定に失敗した場合、出力は生成されません。
 
-## Evidence boundaries
+## 集計する証跡の範囲
 
-The output preserves source paths, run IDs, observed timestamps, attempt values when present, report outcomes, exact step failures, and backend/frontend coverage observations. It counts source report records rather than asserting unique workflow runs. Coverage averages/minima/maxima are computed only from measured source values; missing coverage remains unavailable with its source reason.
+元レポートのパス、Run ID、観測日時、存在する場合はattempt値、レポート結果、実際に失敗したステップ、Backend/Frontendのカバレッジ観測値を保持します。ワークフローRunを一意に特定したとは見なさず、元レポート単位で件数を数えます。カバレッジの平均・最小・最大は実測値だけから計算し、欠損値は元レポートの理由とともに利用不可として扱います。
 
-M3 reports do not provide PR conversion, complete retry counts, false-positive adjudication, human decisions/adoption, issue outcomes, or a comparable trend baseline. These metrics remain explicitly unavailable; the retrospective does not infer them. No PR/issue lookup, retry attribution, or trend comparison is performed.
+M3レポートにはPR化率、完全な再試行回数、誤検知の判定、人間の判断・採否、Issueの結果、比較可能な傾向基準値は含まれません。これらの指標は明示的に利用不可とし、推測しません。PR/Issue検索、再試行の推定、傾向比較は行いません。
 
-Any generated recommendation is `proposed`, includes its observed failure evidence, hypothesis, and verification method, and cannot be accepted by the CLI. A human must provide an owner and deadline before acceptance. This tool never modifies workflows, thresholds, or source reports and never treats an AI proposal as a human decision.
+生成する改善案はすべて`proposed`（提案）です。観測された失敗の根拠、仮説、検証方法を含みますが、このCLIで採用することはできません。採用には人間によるOwnerと期限の設定が必要です。このツールはワークフロー、閾値、元レポートを変更せず、AIの提案を人間の判断として扱いません。
 
-Run `npm run test:m5` for the deterministic M5 tests. The main Quality workflow runs this command and records its outcome in the M3 quality evidence report.
+M5の決定論的テストは`npm run test:m5`で実行できます。メインのQualityワークフローでも実行し、M3品質証跡レポートに結果を記録します。

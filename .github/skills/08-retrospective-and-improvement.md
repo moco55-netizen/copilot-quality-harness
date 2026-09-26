@@ -1,28 +1,28 @@
-# Retrospective and Improvement
+# 振り返りと改善
 
-## Purpose
-Separate observed quality evidence, AI-generated proposals, and human decisions. M5 produces a bounded, deterministic retrospective from existing M3 workflow reports; it does not decide or implement improvements.
+## 目的
+観測した品質証跡、AIによる提案、人間の判断を明確に分けます。M5は既存のM3ワークフローレポートから範囲を限定した決定論的な振り返りを生成します。改善の採否を決めたり、実装したりはしません。
 
-## Trigger
-Run manually for an explicit 14-day interval after an owner has downloaded the available Quality workflow artifacts. There is no scheduled retrospective or automatic artifact collection.
+## 実行タイミング
+Ownerが取得可能なQualityワークフローのArtifactをダウンロードした後、期間を明示した14日間の振り返りを手動で実行します。定期実行やArtifactの自動収集は設定しません。
 
-## Required inputs
-One or more M3 `test-result.json` files, or directories containing them, plus an explicit start and exclusive end timestamp exactly 14 days apart. See [`../../docs/m5-fortnightly-retrospective.md`](../../docs/m5-fortnightly-retrospective.md) for manual artifact setup and CLI usage.
+## 必須入力
+M3の`test-result.json`ファイル（1つ以上）またはそれらを含むディレクトリと、ちょうど14日離れた開始・終了日時を指定します。開始日時は含み、終了日時は含みません。Artifactの手動取得方法とCLIの使い方は[「M5 隔週振り返り」](../../docs/m5-fortnightly-retrospective.md)を参照してください。
 
-## Procedure
-Run `npm run m5:retrospective -- --input <file-or-directory> --start <ISO-date-time> --end <ISO-date-time>`. The CLI validates every input, selects reports by observed `workflow.startedAt` (or the report's observed `generatedAt` if the workflow timestamp is unavailable), and emits JSON and Markdown. It reports counts of source report outcomes, actual failed steps, and only measured backend/frontend coverage.
+## 手順
+`npm run m5:retrospective -- --input <file-or-directory> --start <ISO-date-time> --end <ISO-date-time>`を実行します。CLIはすべての入力を検証し、観測された`workflow.startedAt`（ワークフロー開始日時がない場合はレポートの`generatedAt`）で対象レポートを選び、JSONとMarkdownを生成します。集計するのは元レポートの結果数、実際に失敗したステップ、実測されたBackend/Frontendのカバレッジだけです。
 
-## Output contract
-`retrospective.json` conforms to `qa/test-management/schemas/retrospective.schema.json`; Markdown contains the same window, metrics, source run IDs/paths/timestamps, and excluded out-of-window reports. Recommendations are always `proposed` and include an evidence basis, hypothesis, and verification method. Human owner and deadline are required before any acceptance; this CLI leaves approval pending.
+## 出力契約
+`retrospective.json`は`qa/test-management/schemas/retrospective.schema.json`に準拠します。Markdownには同じ期間・指標・元レポートのRun ID/パス/日時と、期間外として除外したレポートを記載します。改善案は常に`proposed`（提案）として出力し、根拠、仮説、検証方法を含めます。採用前に人間がOwnerと期限を設定する必要があり、CLIが承認することはありません。
 
-## Stop conditions
-Invalid or malformed input, a window other than exactly 14 days, no discovered reports, or no reports within the selected window stops generation with a nonzero exit code. No partial retrospective is written.
+## 停止条件
+入力不正・形式不正、14日間ではない期間、レポートが見つからない場合、または期間内に該当レポートがない場合は、0以外の終了コードで停止します。途中までの振り返りは出力しません。
 
-## Do not
-Do not infer missing values, PR conversion, complete retry counts, false positives, decisions/adoption, issue outcomes, or trend baselines. Do not treat proposals as accepted, and do not automatically change workflows or thresholds.
+## 禁止事項
+欠損値、PR化率、完全な再試行回数、誤検知、人間の判断・採否、Issueの結果、傾向比較の基準値を推測しないでください。提案を採用済みとして扱わず、ワークフローや閾値を自動変更しないでください。
 
-## Owner setup
-Quality artifacts are retained for 14 days. Owners must manually download and retain the artifact reports needed for the selected interval; reports that are no longer available must be recorded as unavailable rather than reconstructed.
+## Ownerによる準備
+Quality Artifactの保持期間は14日です。Ownerは対象期間に必要なArtifactを手動でダウンロードして保管してください。取得できなくなったレポートは再構成せず、利用不可として記録します。
 
-## Verification
-Check the exact UTC window, included/excluded report paths, observed run IDs and timestamps, measured coverage observations, and proposal evidence. Run `npm run test:m5`; the main Quality CI workflow runs this test command.
+## 検証
+UTCで指定した期間、対象・除外したレポートのパス、観測Run IDと日時、実測カバレッジ、提案の根拠を確認します。`npm run test:m5`を実行してください。メインのQuality CIでも同じテストを実行します。
