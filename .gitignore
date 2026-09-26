@@ -5,3 +5,4 @@ playwright-report/
 test-results/
 backend/data/
 qa/test-management/reports/test-result.json
+qa/test-management/retrospectives/

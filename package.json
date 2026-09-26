@@ -14,10 +14,12 @@
     "test:e2e": "playwright test",
     "test:m2": "node --test scripts/m2-validation.test.mjs",
     "test:m4": "node --test scripts/pr-safety-gate.test.mjs",
+    "test:m5": "node --test scripts/retrospective.test.mjs",
     "test:report": "node --test scripts/quality-report.test.mjs",
     "m2:validate": "node scripts/m2-validation.mjs --issue fixtures/m2/valid-issue.json --catalog qa/test-management/test-observation-catalog.yml --root . --output qa/test-management/reports/m2-validation.json",
     "lint": "npm run lint --workspace frontend && npm run lint --workspace backend",
-    "quality:report": "node scripts/quality-report.mjs"
+    "quality:report": "node scripts/quality-report.mjs",
+    "m5:retrospective": "node scripts/retrospective.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",

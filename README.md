@@ -19,6 +19,7 @@ npm run quality:report  # qa/test-management/reports/test-result.json を生成
 npm run test:report     # 品質レポートの状態判定テスト
 npm run test:m2          # M2 CLIの決定論的テスト
 npm run test:m4          # M4 PR安全ゲートの決定論的テスト
+npm run test:m5          # M5 隔週振り返りの決定論的テスト
 npm run m2:validate      # fixtures/m2/valid-issue.jsonからM2成果物を生成
 ```
 
@@ -30,9 +31,19 @@ npm run m2:validate      # fixtures/m2/valid-issue.jsonからM2成果物を生�
 
 ### CI evidence
 
-GitHub Actions collects the actual outcome of install, unit, M2 validation, build, lint, and E2E steps into `test-result.json`; failed or skipped steps are never represented as passed. The job summary is rendered from that same JSON, and the JSON plus available coverage summaries are uploaded as `quality-evidence-<run-id>-<attempt>` for 14 days. Playwright traces, screenshots, video, HTML report, and captured E2E log are uploaded on E2E failure for 14 days.
+GitHub Actions collects the actual outcome of install, report tests, unit, M5 tests, M2 validation, build, lint, and E2E steps into `test-result.json`; failed or skipped steps are never represented as passed. The job summary is rendered from that same JSON, and the JSON plus available coverage summaries are uploaded as `quality-evidence-<run-id>-<attempt>` for 14 days. Playwright traces, screenshots, video, HTML report, and captured E2E log are uploaded on E2E failure for 14 days.
 
 Frontend `App.jsx` and backend `app.js`/`db.js` coverage is measured with Vitest V8. Every coverage metric (statements, branches, functions, and lines) must meet the documented 10% minimum; the test run and final report both fail closed when coverage is missing or below threshold. Test counts, retry counts, and coverage deltas are not emitted by the current runners and are explicitly marked unmeasured.
+
+### M5 隔週振り返り
+
+決定論的なM5 CLIは、ファイルまたはディレクトリとして指定した既存のM3 `test-result.json`レポートのみを読み込みます。OwnerはQualityワークフローのArtifactを手動でダウンロードし、保管してください。Artifactは14日間保持され、自動収集や定期実行は設定していません。UTCで14日間の期間を明示します（開始日時を含み、終了日時を含みません）。
+
+```bash
+npm run m5:retrospective -- --input ./downloaded-quality-artifacts --start 2026-09-01T00:00:00Z --end 2026-09-15T00:00:00Z
+```
+
+`qa/test-management/retrospectives/`以下に`retrospective.json`と`retrospective.md`を出力します。集計対象は観測されたRun ID・日時、レポート結果、実際に失敗したステップ、実測されたBackend/Frontendカバレッジだけです。元レポートに含まれないPR化率、完全な再試行回数、誤検知、人間の判断・採否、Issueの結果、傾向比較の基準値は利用不可のままとし、推測しません。改善案は`proposed`（提案）の状態で、仮説と検証方法を含みます。採用には人間のOwnerと期限が必要です。CLIがワークフローや閾値を変更することはありません。詳細は[「M5 隔週品質振り返り」](docs/m5-fortnightly-retrospective.md)を参照してください。
 
 ## Repository map
 

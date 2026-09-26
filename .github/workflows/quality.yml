@@ -22,6 +22,8 @@ jobs:
         run: npm run test:report
       - id: unit
         run: npm test
+      - id: m5_tests
+        run: npm run test:m5
       - id: m2_tests
         run: npm run test:m2
       - id: m2_validation
@@ -56,6 +58,7 @@ jobs:
           QUALITY_INSTALL: ${{ steps.install.outcome }}
           QUALITY_REPORT_TESTS: ${{ steps.report_tests.outcome }}
           QUALITY_UNIT: ${{ steps.unit.outcome }}
+          QUALITY_M5_TESTS: ${{ steps.m5_tests.outcome }}
           QUALITY_M2_TESTS: ${{ steps.m2_tests.outcome }}
           QUALITY_M2_VALIDATION: ${{ steps.m2_validation.outcome }}
           QUALITY_BUILD: ${{ steps.build.outcome }}

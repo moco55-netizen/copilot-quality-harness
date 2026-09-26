@@ -1,18 +1,28 @@
-# Retrospective and Improvement
+# 振り返りと改善
 
-## Purpose
-AIと人間の判断を分離して品質改善へ反映する。
-## Trigger
-2週間単位、または十分なRunデータが蓄積したとき。
-## Required inputs
-Issue、PR、Workflow、Artifact、見逃し、不具合、停止理由。
-## Procedure
-実行数、PR化率、CI/E2E失敗率、coverage、再実行、採否、誤検知を集計する。
-## Output contract
-振り返りMarkdown、改善候補、採否理由、担当、期限、検証方法。
-## Stop conditions
-データ欠落、AI提案と人間判断の混同、担当・期限・検証方法の欠落。
-## Do not
-欠測値を推測で埋めない。
-## Verification
-集計元Run ID、期間、指標、改善仮説を確認する。
+## 目的
+観測した品質証跡、AIによる提案、人間の判断を明確に分けます。M5は既存のM3ワークフローレポートから範囲を限定した決定論的な振り返りを生成します。改善の採否を決めたり、実装したりはしません。
+
+## 実行タイミング
+Ownerが取得可能なQualityワークフローのArtifactをダウンロードした後、期間を明示した14日間の振り返りを手動で実行します。定期実行やArtifactの自動収集は設定しません。
+
+## 必須入力
+M3の`test-result.json`ファイル（1つ以上）またはそれらを含むディレクトリと、ちょうど14日離れた開始・終了日時を指定します。開始日時は含み、終了日時は含みません。Artifactの手動取得方法とCLIの使い方は[「M5 隔週振り返り」](../../docs/m5-fortnightly-retrospective.md)を参照してください。
+
+## 手順
+`npm run m5:retrospective -- --input <file-or-directory> --start <ISO-date-time> --end <ISO-date-time>`を実行します。CLIはすべての入力を検証し、観測された`workflow.startedAt`（ワークフロー開始日時がない場合はレポートの`generatedAt`）で対象レポートを選び、JSONとMarkdownを生成します。集計するのは元レポートの結果数、実際に失敗したステップ、実測されたBackend/Frontendのカバレッジだけです。
+
+## 出力契約
+`retrospective.json`は`qa/test-management/schemas/retrospective.schema.json`に準拠します。Markdownには同じ期間・指標・元レポートのRun ID/パス/日時と、期間外として除外したレポートを記載します。改善案は常に`proposed`（提案）として出力し、根拠、仮説、検証方法を含めます。採用前に人間がOwnerと期限を設定する必要があり、CLIが承認することはありません。
+
+## 停止条件
+入力不正・形式不正、14日間ではない期間、レポートが見つからない場合、または期間内に該当レポートがない場合は、0以外の終了コードで停止します。途中までの振り返りは出力しません。
+
+## 禁止事項
+欠損値、PR化率、完全な再試行回数、誤検知、人間の判断・採否、Issueの結果、傾向比較の基準値を推測しないでください。提案を採用済みとして扱わず、ワークフローや閾値を自動変更しないでください。
+
+## Ownerによる準備
+Quality Artifactの保持期間は14日です。Ownerは対象期間に必要なArtifactを手動でダウンロードして保管してください。取得できなくなったレポートは再構成せず、利用不可として記録します。
+
+## 検証
+UTCで指定した期間、対象・除外したレポートのパス、観測Run IDと日時、実測カバレッジ、提案の根拠を確認します。`npm run test:m5`を実行してください。メインのQuality CIでも同じテストを実行します。
