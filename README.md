@@ -1,50 +1,62 @@
-# Copilot Quality Harness
+## Auto-merge と Branch protection
 
-最小の React + Node.js + SQLite アプリを題材に、Issue 起点の AI 開発を決定論的なテストと人間レビューで支えるためのハーネスです。M0〜M2では、入力契約・Skills・決定論的なIssue→解析→テスト設計検証・テスト・CIの土台を提供します。
+このリポジトリでは、Auto-merge を有効化する前に、`scripts/merge-decision-check.mjs` による安全判定を通す設計にしています。
 
-## Quick start
+### 必須チェック
+
+PR は次の条件をすべて満たした場合のみ Auto-merge 可能です。
+
+- `quality` Status Check が success
+- `M2 validation` Status Check が success
+- `AI Review` Status Check が success
+- 少なくとも 1 件の human approval がある
+- PR が Draft ではない
+- Merge conflict がない
+- fork PR ではない
+- secret / permission の不足がない
+- high / critical リスク変更ではない
+- テストが実行済みで成功している
+- diff が上限（500 行）を超えていない
+- AI review が成功している
+- 最新コミットが base と一致している
+
+### 判定スクリプト
 
 ```bash
-npm install
-npm run dev
+node scripts/merge-decision-check.mjs --pr-context ./path/to/pr-context.json
 ```
 
-ブラウザで <http://localhost:5173> を開きます。APIは `http://localhost:3000` です。
+このスクリプトは、条件未達時に `stopReasons` を返し、PR comment と workflow summary で明示します。
 
-```bash
-npm test                 # frontend unit + backend API
-npm run build            # frontend production build
-npm run test:e2e         # Playwright (必要なら npx playwright install)
-npm run quality:report  # qa/test-management/reports/test-result.json を生成
-npm run test:m2          # M2 CLIの決定論的テスト
-npm run m2:validate      # fixtures/m2/valid-issue.jsonからM2成果物を生成
-```
+### GitHub Actions 連携
 
-## Quality contract
+- `.github/workflows/merge-decision.yml`
+- `.github/branch-protection.md`
 
-`.github/skills/00-common-contract.md` をすべてのSkillの共通契約とし、Issue入力、影響範囲、テスト観点、実測結果、残存リスクを分離して記録します。AIの出力は提案であり、CIの実測値と人間の承認を代替しません。高リスク変更、入力不足、テスト未実施、権限不足では停止します。
+上記を組み合わせて、PR が安全条件を満たした時だけ `gh pr merge --auto` を実行します。
 
-最初のスライスでは、Issueテンプレート、PRテンプレート、CI（unit/API/build/E2E）、テスト結果JSONを提供します。Auto-merge、AIレビューの承認扱い、Branch protectionの変更は安全設計のため後続フェーズです。
+### 手動対応
 
-## Repository map
+Auto-merge が止まった場合は、PR コメントの停止理由と `.github/branch-protection.md` の対処手順に従ってください。
 
-- `frontend/`: React/Vite UIとcomponent test
-- `backend/`: Express API、SQLite schema、API test
-- `e2e/`: Playwright主要ユーザーフロー
-- `.github/skills/`: 共通契約と優先Skills
-- `.github/workflows/`: 決定論的CI
-- `qa/test-management/`: 観点カタログ、スキーマ、実行レポート
+- fork PR では手動 cherry-pick
+- secret / permissions 不足は Actions 画面で確認
+- high / critical リスクの変更は人間による手動レビュー
+- テスト失敗時はテスト修正後に再 push
+- AI Review 指摘がある場合は修正と再検証
+- 人間承認がない場合は reviewer の承認を依頼
 
-## M2 validation contract
+### ブランチ保護
 
-`scripts/m2-validation.mjs` は `--issue`（ローカルIssue契約JSON）または同一リポジトリから取得した `--github-issue`、`--catalog`（観点カタログYAML）、`--root`（解析対象ルート）、`--output`（成果物出力先）を受け取ります。GitHub Issueモードでは要求番号、API/HTML URL、Issue種別、open状態を検証し、本文は決められた見出しからだけ抽出します。本文をプロンプトや実行コードとして扱う処理はありません。出力契約は `qa/test-management/schemas/m2-validation.schema.json` で定義し、`sourceTrust`、`analysis`、`testDesign`、実装を許可しない人間レビュー用`handoff`を含む決定論的JSONです。
+リポジトリ設定で `main` に対して以下を設定してください。
 
-終了コードは `0=人間レビュー可能`、`2=契約/参照不正`、`3=安全停止（high/critical、不足情報、制限超過、禁止範囲）`、`4=入出力エラー` です。`targetPaths` はリポジトリ相対パスのみ許可され、存在しない参照や親ディレクトリ参照は停止します。Issue本文・受入条件・テスト観点・参照ファイル数には上限を設けています。
+- Require pull request before merging
+- Require approvals: 1
+- Require status checks to pass before merging
+  - `quality`
+  - `M2 validation`
+  - `AI Review`
+- Require branches to be up to date before merging
+- Dismiss stale reviews when new commits are pushed
 
-### Manual GitHub Actions intake
-
-1. `.github/workflows/m2-issue-intake.yml` の **Run workflow** を既定ブランチで手動実行し、このリポジトリで開いているIssue番号を入力します。既定ブランチ以外からの実行は拒否されます。
-2. Issueフォームの `受入条件`、`影響範囲`（Frontend/Backend/API/DB/Infra/Docs）、`リスク`（low/medium/high/critical）、`テスト要求`を記入してください。高/critical、不足情報、認証・個人情報・決済・破壊的DB操作の記述、入力上限超過は停止し、可能な場合は理由をIssueコメントに残します。
-3. 成功・停止いずれも14日保持のJSON Artifactとして記録します。成功時も提案するのは `work/issue-N` 形式のブランチ名だけで、ブランチ作成・実装・テスト実行・PR作成は行わず、人間のレビューと別途の明示的承認が必要です。
-
-Workflow権限は `contents: read` とIssueへの説明コメントに必要な `issues: write` のみです。リポジトリまたはOrganizationのActions設定で、`GITHUB_TOKEN`によるIssueコメント書き込みを許可してください。追加Secrets、`COPILOT_GITHUB_TOKEN`、GitHub App、外部モデル呼び出しは不要です。本文は同一リポジトリのGitHub Issues APIから取得し、原文はArtifactに保存しません。
+これにより、条件未達時にはマージ不能であり、Auto-merge が安全に止まるようになります。
